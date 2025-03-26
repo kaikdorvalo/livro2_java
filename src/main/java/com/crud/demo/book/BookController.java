@@ -8,6 +8,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -17,15 +18,29 @@ public class BookController {
     @Autowired
     private BookService bookService;
 
+    private BookMapper bookMapper = new BookMapper();
+
 
     @GetMapping
-    private ResponseEntity<List<BookModel>> listarLivros(){
+    private ResponseEntity<List<BookDTO>> listarLivros(){
        List<BookModel> list = bookService.findAll();
-        return ResponseEntity.ok().body(list);
+       List<BookDTO> listdto = new ArrayList<BookDTO>();
+        for (int i = 0; i < list.size(); i++) {
+            BookDTO bookDto = new BookDTO();
+            bookDto.setId(list.get(i).getId());
+            bookDto.setCategoria(list.get(i).getCategoria());
+            bookDto.setNome(list.get(i).getNome());
+
+            listdto.add(bookDto);
+        }
+
+        return ResponseEntity.ok().body(listdto);
     }
 
     @PostMapping
-    private ResponseEntity criarLivro(@RequestBody BookModel bookModel){
+    private ResponseEntity criarLivro(@RequestBody BookDTO bookDto){
+        BookModel bookModel = bookMapper.toEntity(bookDto);
+
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
                 .buildAndExpand(bookModel.getId()).toUri();
 
@@ -48,7 +63,8 @@ public class BookController {
     }
 
     @PutMapping("/{id}")
-    private ResponseEntity<BookModel> update(@PathVariable Long id, @RequestBody BookModel bookModel){
+    private ResponseEntity<BookModel> update(@PathVariable Long id, @RequestBody BookDTO bookDTO){
+        BookModel bookModel = bookMapper.toEntity(bookDTO);
          BookModel response  = bookService.update(id, bookModel);
          if (response == null) {
              return ResponseEntity.notFound().build();
